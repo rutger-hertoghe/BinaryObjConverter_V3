@@ -9,13 +9,10 @@
 BinaryWriter::BinaryWriter(const std::string& inputFile, const std::string& outputFile)
     : m_InputFile(inputFile)
     , m_OutputFile(outputFile, std::ios::binary)
+    , m_OutputName(outputFile)
 	, m_UseCompactFaces(false)
 {
-    if (!m_InputFile.is_open())
-    {
-        std::cout << "Input file not found!\n";
-        return;
-    }
+    // Whether file can be opened is already verified by ArgumentInterpreter
 }
 
 void BinaryWriter::WriteBobj()
@@ -23,6 +20,7 @@ void BinaryWriter::WriteBobj()
     EncodeHeader();
     WriteBody();
     m_OutputFile.close();
+    std::cout << "Succesfully wrote " << m_OutputName << "!\n";
 }
 
 int BinaryWriter::CountVertices()

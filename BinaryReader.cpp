@@ -7,14 +7,11 @@
 BinaryReader::BinaryReader(const std::string& inputFile, const std::string& outputFile)
 	: m_InputFile{inputFile, std::ios::binary}
 	, m_OutputFile{outputFile}
+	, m_OutputName{outputFile}
 {
-    if (!m_InputFile.is_open())
-    {
-        std::cout << "Input file not found!\n";
-        return;
-    }
+    // Whether file can be opened is already verified by ArgumentInterpreter
     DecodeHeader();
-    VerifyHeader();
+    //VerifyHeader();
 }
 
 void BinaryReader::DecodeHeader()
@@ -42,7 +39,12 @@ void BinaryReader::DecodeHeader()
         // Resizing required to ensure string contains correct information
         std::string typeString{};
         typeString.resize(stringSize);
+#ifdef _DEBUG
         m_InputFile.read(typeString.data(), stringSize);
+#else
+        auto stringData{ const_cast<char*>(typeString.data()) };
+        m_InputFile.read(stringData, stringSize);
+#endif
 
         m_TypeMap[typeChar] = typeString;
     }
@@ -93,6 +95,7 @@ void BinaryReader::WriteObj()
             return;
         }
     }
+    std::cout << "Succesfully wrote " << m_OutputName << "!\n";
 }
 
 void BinaryReader::WriteVertexBlock()
@@ -176,6 +179,11 @@ void BinaryReader::WriteComment()
     m_InputFile.read((char*)&commentLength, sizeof(commentLength));
     std::string comment{};
     comment.resize(commentLength);
+#ifdef _DEBUG
     m_InputFile.read(comment.data(), commentLength);
+#else
+    auto commentData{ const_cast<char*>(comment.data()) };
+    m_InputFile.read(commentData, commentLength);
+#endif
     m_OutputFile << comment << '\n';
 }
