@@ -130,6 +130,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BinaryObjConverter_V3.cpp" />
+    <ClCompile Include="BinaryReader.cpp" />
+    <ClCompile Include="BinaryWriter.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="BinaryReader.h" />
+    <ClInclude Include="BinaryWriter.h" />
+    <ClInclude Include="Structs.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
