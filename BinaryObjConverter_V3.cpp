@@ -5,6 +5,7 @@ int main()
 {
     BinaryWriter("low_poly_stanford_bunny.obj", "outputFile.bobj");
 
-    BinaryReader("outputFile.bobj", "reinterpreted.obj");
+    BinaryReader reader("outputFile.bobj", "reinterpreted.obj");
+    reader.WriteObj();
 }
 
