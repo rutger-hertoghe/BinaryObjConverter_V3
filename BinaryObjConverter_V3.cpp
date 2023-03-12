@@ -3,6 +3,9 @@
 
 int main()
 {
+    // TODO: handle input commands
+    // TODO: add checking whether files are valid
+
     BinaryWriter writer("low_poly_stanford_bunny.obj", "outputFile.bobj");
     writer.WriteBobj();
 

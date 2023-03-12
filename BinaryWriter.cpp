@@ -9,6 +9,7 @@
 BinaryWriter::BinaryWriter(const std::string& inputFile, const std::string& outputFile)
     : m_InputFile(inputFile)
     , m_OutputFile(outputFile, std::ios::binary)
+	, m_UseCompactFaces(false)
 {
     if (!m_InputFile.is_open())
     {
@@ -24,8 +25,34 @@ void BinaryWriter::WriteBobj()
     m_OutputFile.close();
 }
 
+int BinaryWriter::CountVertices()
+{
+    // TODO: integrate this count with initialize type map?
+    int vertexCount{0};
+    std::string readLine;
+    while(std::getline(m_InputFile, readLine))
+    {
+        std::stringstream line{ readLine };
+        std::string type;
+        line >> type;
+        if(type == "v")
+        {
+            ++vertexCount;
+        }
+    }
+    // Go back to start of file
+    m_InputFile.clear();
+    m_InputFile.seekg(0);
+
+    return vertexCount;
+}
+
 void BinaryWriter::EncodeHeader()
 {
+    if(CountVertices() < 65536)
+    {
+        m_UseCompactFaces = true;
+    }
     InitializeTypeMap();
     WriteHeader();
     WriteNullTerminator();
@@ -92,10 +119,13 @@ void BinaryWriter::WriteBody()
         line >> lineType;
 
         // If line of different type, write block
-        if (lineType != currentType && !blockData.empty())
+        if (lineType != currentType)
         {
-            WriteBlock(currentType, blockData);
-            blockData.clear();
+            if(!blockData.empty())
+            {
+                WriteBlock(currentType, blockData);
+                blockData.clear();
+            }
             currentType = lineType;
         }
         blockData.push_back(line.str());
@@ -111,32 +141,53 @@ void BinaryWriter::WriteBody()
 
 void BinaryWriter::WriteBlock(const std::string& currentType, const std::vector<std::string>& blockData)
 {
-    if (currentType == "v" || currentType == "f")
+    // TODO: add functionality for comments
+    /*if(currentType == "#")
     {
-        WriteDataBlockInfo(currentType, blockData);
-    }
+        char type{ m_TypeMap[currentType] };
+        m_OutputFile.write(&type, sizeof(type));
 
-    // Write block
+        size_t blockLength{ 0 };
+        for(const auto& comment : blockData)
+        {
+            blockLength += comment.size();
+        }
+        m_OutputFile.write((const char*)&blockLength, sizeof(blockLength));
+
+        for(const auto& comment : blockData)
+        {
+            const size_t commentSize{ comment.size() };
+            m_OutputFile.write(comment.data(), static_cast<std::streamsize>(commentSize));
+        }
+
+        WriteNullTerminator();
+    }*/
+
     if (currentType == "v")
     {
+        WriteVertexBlockInfo(currentType, blockData);
+        WriteVertexBlock(blockData);
+        WriteNullTerminator();
+    }
+    else if(currentType == "vn")
+    {
+        WriteVertexBlockInfo(currentType, blockData);
         WriteVertexBlock(blockData);
         WriteNullTerminator();
     }
     else if (currentType == "f")
     {
+        WriteFaceBlockInfo(currentType, blockData);
         WriteFaceBlock(blockData);
         WriteNullTerminator();
     }
-
 }
 
-void BinaryWriter::WriteDataBlockInfo(const std::string& currentType, const std::vector<std::string>& blockData)
+void BinaryWriter::WriteVertexBlockInfo(const std::string& currentType, const std::vector<std::string>& blockData)
 {
-    // Write type
     char type{ m_TypeMap[currentType] };
     m_OutputFile.write(&type, sizeof(type));
 
-    // Write blocklength (block.size() * relevant fields)
     size_t blockLength{ blockData.size() };
     m_OutputFile.write((const char*)&blockLength, sizeof(blockLength));
 }
@@ -153,14 +204,36 @@ void BinaryWriter::WriteVertexBlock(const std::vector<std::string>& blockData)
     }
 }
 
+void BinaryWriter::WriteFaceBlockInfo(const std::string& currentType, const std::vector<std::string>& blockData)
+{
+    char type{ m_TypeMap[currentType] };
+    m_OutputFile.write(&type, sizeof(type));
+
+    // Write compressionType
+    m_OutputFile.write((const char*)&m_UseCompactFaces, sizeof(m_UseCompactFaces));
+
+    // Write blocklength (block.size() * relevant fields)
+    size_t blockLength{ blockData.size() };
+    m_OutputFile.write((const char*)&blockLength, sizeof(blockLength));
+}
+
 void BinaryWriter::WriteFaceBlock(const std::vector<std::string>& blockData)
 {
     for (const auto& fString : blockData)
     {
         std::stringstream faceString{ fString };
         std::string type;
-        Face f;
-        faceString >> type >> f.v0 >> f.v1 >> f.v2;
-        m_OutputFile.write((const char*)&f, sizeof(f));
+        if(m_UseCompactFaces)
+        {
+            CompactFace f;
+            faceString >> type >> f.v0 >> f.v1 >> f.v2;
+            m_OutputFile.write((const char*)&f, sizeof(f));
+        }
+        else
+        {
+            Face f;
+            faceString >> type >> f.v0 >> f.v1 >> f.v2;
+            m_OutputFile.write((const char*)&f, sizeof(f));
+        }
     }
 }

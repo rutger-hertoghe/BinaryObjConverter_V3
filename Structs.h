@@ -9,3 +9,8 @@ struct Face
 {
     int v0, v1, v2;
 };
+
+struct CompactFace
+{
+    short int v0, v1, v2;
+};
