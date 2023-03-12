@@ -66,22 +66,41 @@ void BinaryReader::WriteObj()
     {
         char type{};
         m_InputFile.read(&type, sizeof(type));
-        size_t blockSize{};
-        m_InputFile.read((char*)&blockSize, sizeof(blockSize));
 
         if (m_TypeMap[type] == "v")
         {
+            size_t blockSize{};
+            m_InputFile.read((char*)&blockSize, sizeof(blockSize));
             for (size_t i{ 0 }; i < blockSize; ++i)
             {
                 WriteVertex();
             }
         }
+        else if (m_TypeMap[type] == "vn")
+        {
+            size_t blockSize{};
+            m_InputFile.read((char*)&blockSize, sizeof(blockSize));
+            for (size_t i{ 0 }; i < blockSize; ++i)
+            {
+                WriteNormal();
+            }
+        }
         else if (m_TypeMap[type] == "f")
         {
+            bool useCompactFaces;
+            m_InputFile.read((char*)&useCompactFaces, sizeof(useCompactFaces));
+
+            size_t blockSize{};
+            m_InputFile.read((char*)&blockSize, sizeof(blockSize));
+
             for (size_t i(0); i < blockSize; ++i)
             {
-                WriteFace();
+                WriteFace(useCompactFaces);
             }
+        }
+        else if(m_TypeMap[type] == "#")
+        {
+	        
         }
 
         // Verify end of block
@@ -102,9 +121,25 @@ void BinaryReader::WriteVertex()
     m_OutputFile << "v " << v.x << " " << v.y << " " << v.z << '\n';
 }
 
-void BinaryReader::WriteFace()
+void BinaryReader::WriteNormal()
 {
-    Face f{};
-    m_InputFile.read((char*)&f, sizeof(f));
-    m_OutputFile << "f " << f.v0 << " " << f.v1 << " " << f.v2 << '\n';
+    Vertex v{};
+    m_InputFile.read((char*)&v, sizeof(v));
+    m_OutputFile << "vn " << v.x << " " << v.y << " " << v.z << '\n';
+}
+
+void BinaryReader::WriteFace(bool isCompact)
+{
+    if(isCompact)
+    {
+        CompactFace f{};
+        m_InputFile.read((char*)&f, sizeof(f));
+        m_OutputFile << "f " << f.v0 << " " << f.v1 << " " << f.v2 << '\n';
+    }
+    else
+    {
+        Face f{};
+        m_InputFile.read((char*)&f, sizeof(f));
+        m_OutputFile << "f " << f.v0 << " " << f.v1 << " " << f.v2 << '\n';
+    }
 }

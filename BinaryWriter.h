@@ -15,6 +15,11 @@ private:
 	std::ofstream m_OutputFile;
 
 	std::unordered_map<std::string, char> m_TypeMap;
+
+	bool m_UseCompactFaces;
+
+	int CountVertices();
+
 	void EncodeHeader();
 	void InitializeTypeMap();
 	void WriteHeader();
@@ -24,8 +29,9 @@ private:
 	void WriteBody();
 
 	void WriteBlock(const std::string& currentType, const std::vector<std::string>& blockData);
-	void WriteDataBlockInfo(const std::string& currentType, const std::vector<std::string>& blockData);
+	void WriteVertexBlockInfo(const std::string& currentType, const std::vector<std::string>& blockData);
 	void WriteVertexBlock(const std::vector<std::string>& blockData);
+	void WriteFaceBlockInfo(const std::string& currentType, const std::vector<std::string>& blockData);
 	void WriteFaceBlock(const std::vector<std::string>& blockData);
 };
 

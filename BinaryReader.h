@@ -20,6 +20,7 @@ private:
 	void VerifyHeader();
 
 	void WriteVertex();
-	void WriteFace();
+	void WriteNormal();
+	void WriteFace(bool isCompact);
 };
 
