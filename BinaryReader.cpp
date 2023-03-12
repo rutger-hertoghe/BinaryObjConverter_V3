@@ -8,6 +8,11 @@ BinaryReader::BinaryReader(const std::string& inputFile, const std::string& outp
 	: m_InputFile{inputFile, std::ios::binary}
 	, m_OutputFile{outputFile}
 {
+    if (!m_InputFile.is_open())
+    {
+        std::cout << "Input file not found!\n";
+        return;
+    }
     DecodeHeader();
     VerifyHeader();
 }

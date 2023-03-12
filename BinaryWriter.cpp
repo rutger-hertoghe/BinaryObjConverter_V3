@@ -15,10 +15,24 @@ BinaryWriter::BinaryWriter(const std::string& inputFile, const std::string& outp
         std::cout << "Input file not found!\n";
         return;
     }
+}
 
-    // COMPOSE BINARY HEADER
-    // Set up map containing strings and an index for their type
-    //std::unordered_map<std::string, char> typeMap;
+void BinaryWriter::WriteBobj()
+{
+    EncodeHeader();
+    WriteBody();
+    m_OutputFile.close();
+}
+
+void BinaryWriter::EncodeHeader()
+{
+    InitializeTypeMap();
+    WriteHeader();
+    WriteNullTerminator();
+}
+
+void BinaryWriter::InitializeTypeMap()
+{
     char typeIdx{ 1 };
 
     // Read through the file and add the first string find for each line to the typemap
@@ -34,12 +48,15 @@ BinaryWriter::BinaryWriter(const std::string& inputFile, const std::string& outp
             m_TypeMap[type] = typeIdx++;
         }
     }
-    // Go back to the beginning
+
+    // Go back to the beginning of the file
     m_InputFile.clear();
     m_InputFile.seekg(0);
+}
 
+void BinaryWriter::WriteHeader()
+{
     // NOTE: if more than 255 "types" were detected in the file, this code will break. This should not be the case for obj files.
-    // Write header
     for (const auto& typePair : m_TypeMap)
     {
         const auto& typeString{ typePair.first };
@@ -52,14 +69,21 @@ BinaryWriter::BinaryWriter(const std::string& inputFile, const std::string& outp
         // Write contents of string
         m_OutputFile.write(typeString.data(), stringSize);
     }
-    // Write null terminator to denote end of header
-    const char nullTerminator{ 0 };
-    m_OutputFile.write(&nullTerminator, sizeof(nullTerminator));
+}
 
-    // COMPOSE DATA BODY
+void BinaryWriter::WriteNullTerminator()
+{
+    static const char nullTerminator{ 0 };
+    m_OutputFile.write(&nullTerminator, sizeof(nullTerminator));
+}
+
+void BinaryWriter::WriteBody()
+{
+	// COMPOSE DATA BODY
     std::string currentLine;
     std::string currentType;
     std::vector<std::string> blockData;
+
     while (std::getline(m_InputFile, currentLine))
     {
         // Get type of new line
@@ -70,92 +94,73 @@ BinaryWriter::BinaryWriter(const std::string& inputFile, const std::string& outp
         // If line of different type, write block
         if (lineType != currentType && !blockData.empty())
         {
-            if (currentType == "v" || currentType == "f")
-            {
-                // Write type
-                char type{ m_TypeMap[currentType] };
-                m_OutputFile.write(&type, sizeof(type));
-                // Write blocklength (block.size() * relevant fields)
-                size_t blockLength{ blockData.size() };
-                m_OutputFile.write((const char*)&blockLength, sizeof(blockLength));
-            }
-
-            // Write block
-            if (currentType == "v")
-            {
-                for (const auto& vString : blockData)
-                {
-                    std::stringstream vertexString{ vString };
-                    std::string type;
-                    Vertex v;
-                    vertexString >> type >> v.x >> v.y >> v.z;
-                    m_OutputFile.write((const char*)&v, sizeof(v));
-                }
-                m_OutputFile.write(&nullTerminator, sizeof(nullTerminator));
-            }
-            else if (currentType == "f")
-            {
-                for (const auto& fString : blockData)
-                {
-                    std::stringstream faceString{ fString };
-                    std::string type;
-                    Face f;
-                    faceString >> type >> f.v0 >> f.v1 >> f.v2;
-                    m_OutputFile.write((const char*)&f, sizeof(f));
-                }
-                m_OutputFile.write(&nullTerminator, sizeof(nullTerminator));
-            }
-
-            // Clear blockData
+            WriteBlock(currentType, blockData);
             blockData.clear();
-
-            // Set current type to line type
             currentType = lineType;
         }
         blockData.push_back(line.str());
     }
 
+    // Write final block
     if (!blockData.empty())
     {
-        if (currentType == "v" || currentType == "f")
-        {
-            // Write type
-            char type{ m_TypeMap[currentType] };
-            m_OutputFile.write(&type, sizeof(type));
-            // Write blocklength (block.size() * relevant fields)
-            size_t blockLength{ blockData.size() };
-            m_OutputFile.write((const char*)&blockLength, sizeof(blockLength));
-        }
-
-        // Write block
-        if (currentType == "v")
-        {
-            for (const auto& vString : blockData)
-            {
-                std::stringstream vertexString{ vString };
-                std::string type;
-                Vertex v;
-                vertexString >> type >> v.x >> v.y >> v.z;
-                m_OutputFile.write((const char*)&v, sizeof(v));
-            }
-            m_OutputFile.write(&nullTerminator, sizeof(nullTerminator));
-        }
-        else if (currentType == "f")
-        {
-            for (const auto& fString : blockData)
-            {
-                std::stringstream faceString{ fString };
-                std::string type;
-                Face f;
-                faceString >> type >> f.v0 >> f.v1 >> f.v2;
-                m_OutputFile.write((const char*)&f, sizeof(f));
-            }
-            m_OutputFile.write(&nullTerminator, sizeof(nullTerminator));
-        }
-
-        // Clear blockData
+        WriteBlock(currentType, blockData);
         blockData.clear();
     }
+}
 
-    m_OutputFile.close();
+void BinaryWriter::WriteBlock(const std::string& currentType, const std::vector<std::string>& blockData)
+{
+    if (currentType == "v" || currentType == "f")
+    {
+        WriteDataBlockInfo(currentType, blockData);
+    }
+
+    // Write block
+    if (currentType == "v")
+    {
+        WriteVertexBlock(blockData);
+        WriteNullTerminator();
+    }
+    else if (currentType == "f")
+    {
+        WriteFaceBlock(blockData);
+        WriteNullTerminator();
+    }
+
+}
+
+void BinaryWriter::WriteDataBlockInfo(const std::string& currentType, const std::vector<std::string>& blockData)
+{
+    // Write type
+    char type{ m_TypeMap[currentType] };
+    m_OutputFile.write(&type, sizeof(type));
+
+    // Write blocklength (block.size() * relevant fields)
+    size_t blockLength{ blockData.size() };
+    m_OutputFile.write((const char*)&blockLength, sizeof(blockLength));
+}
+
+void BinaryWriter::WriteVertexBlock(const std::vector<std::string>& blockData)
+{
+    for (const auto& vString : blockData)
+    {
+        std::stringstream vertexString{ vString };
+        std::string type;
+        Vertex v;
+        vertexString >> type >> v.x >> v.y >> v.z;
+        m_OutputFile.write((const char*)&v, sizeof(v));
+    }
+}
+
+void BinaryWriter::WriteFaceBlock(const std::vector<std::string>& blockData)
+{
+    for (const auto& fString : blockData)
+    {
+        std::stringstream faceString{ fString };
+        std::string type;
+        Face f;
+        faceString >> type >> f.v0 >> f.v1 >> f.v2;
+        m_OutputFile.write((const char*)&f, sizeof(f));
+    }
 }
