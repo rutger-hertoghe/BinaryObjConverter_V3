@@ -21,12 +21,15 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    // TODO: add checking whether files are valid
-
-    BinaryWriter writer("low_poly_stanford_bunny.obj", "outputFile.bobj");
-    writer.WriteBobj();
-
-    BinaryReader reader("outputFile.bobj", "reinterpreted.obj");
-    reader.WriteObj();
+    if(argInterpreter.GetInputExtension() == "obj")
+    {
+        BinaryWriter writer(argInterpreter.GetInputFile(), argInterpreter.GetOutputFile());
+        writer.WriteBobj();
+    }
+    else if(argInterpreter.GetInputExtension() == "bobj")
+    {
+        BinaryReader reader(argInterpreter.GetInputFile(), argInterpreter.GetOutputFile());
+        reader.WriteObj();
+    }
 }
 

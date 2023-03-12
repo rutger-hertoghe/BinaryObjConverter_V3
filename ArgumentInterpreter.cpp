@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <fstream>
 
 ArgumentInterpreter::ArgumentInterpreter(int argc, char* argv[])
 {
@@ -34,6 +35,13 @@ bool ArgumentInterpreter::IsInputValid()
         return false;
     }
 
+    std::ifstream inputFile{ m_InputFile };
+    if(!inputFile.is_open())
+    {
+        inputFile.close();
+        return false;
+    }
+
     return true;
 }
 
@@ -44,11 +52,11 @@ bool ArgumentInterpreter::IsOutputValid()
         std::cout << "No output file specified! Using ";
         if(m_InputExtension == "obj")
         {
-            m_OutputFile = "defaultFile.bobj";
+            m_OutputFile = "outputFile.bobj";
         }
         else
         {
-            m_OutputFile = "defaultFile.obj";
+            m_OutputFile = "outputFile.obj";
         }
         std::cout << m_OutputFile << '\n';
     }
@@ -66,6 +74,21 @@ bool ArgumentInterpreter::IsOutputValid()
     }
 
     return true;
+}
+
+const std::string& ArgumentInterpreter::GetInputFile()
+{
+    return m_InputFile;
+}
+
+const std::string& ArgumentInterpreter::GetOutputFile()
+{
+    return m_OutputFile;
+}
+
+const std::string& ArgumentInterpreter::GetInputExtension()
+{
+    return m_InputExtension;
 }
 
 std::string ArgumentInterpreter::ParseExtension(const std::string& file)

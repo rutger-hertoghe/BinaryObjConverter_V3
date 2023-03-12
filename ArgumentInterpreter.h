@@ -9,6 +9,11 @@ public:
 	bool IsInputValid();
 	bool IsOutputValid();
 
+	const std::string& GetInputFile();
+	const std::string& GetOutputFile();
+
+	const std::string& GetInputExtension();
+
 private:
 	std::string m_InputFile;
 	std::string m_OutputFile;

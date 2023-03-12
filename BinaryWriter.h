@@ -14,6 +14,8 @@ private:
 	std::ifstream m_InputFile;
 	std::ofstream m_OutputFile;
 
+	std::string m_OutputName;
+
 	std::unordered_map<std::string, char> m_TypeMap;
 
 	bool m_UseCompactFaces;
