@@ -29,8 +29,13 @@ private:
 	void WriteBody();
 
 	void WriteBlock(const std::string& currentType, const std::vector<std::string>& blockData);
+
 	void WriteVertexBlockInfo(const std::string& currentType, const std::vector<std::string>& blockData);
 	void WriteVertexBlock(const std::vector<std::string>& blockData);
+
+	void WriteCommentBlockInfo(const std::string& currentType, const std::vector<std::string>& blockData);
+	void WriteCommentBlock(const std::vector<std::string>& blockData);
+
 	void WriteFaceBlockInfo(const std::string& currentType, const std::vector<std::string>& blockData);
 	void WriteFaceBlock(const std::vector<std::string>& blockData);
 };
