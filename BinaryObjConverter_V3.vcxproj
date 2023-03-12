@@ -129,11 +129,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ArgumentInterpreter.cpp" />
     <ClCompile Include="BinaryObjConverter_V3.cpp" />
     <ClCompile Include="BinaryReader.cpp" />
     <ClCompile Include="BinaryWriter.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ArgumentInterpreter.h" />
     <ClInclude Include="BinaryReader.h" />
     <ClInclude Include="BinaryWriter.h" />
     <ClInclude Include="Structs.h" />
