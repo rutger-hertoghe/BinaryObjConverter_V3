@@ -118,7 +118,6 @@ void BinaryWriter::WriteBody()
         std::string lineType;
         line >> lineType;
 
-        // If line of different type, write block
         if (lineType != currentType)
         {
             if(!blockData.empty())
@@ -141,35 +140,13 @@ void BinaryWriter::WriteBody()
 
 void BinaryWriter::WriteBlock(const std::string& currentType, const std::vector<std::string>& blockData)
 {
-    // TODO: add functionality for comments
-    /*if(currentType == "#")
+    if(currentType == "#")
     {
-        char type{ m_TypeMap[currentType] };
-        m_OutputFile.write(&type, sizeof(type));
-
-        size_t blockLength{ 0 };
-        for(const auto& comment : blockData)
-        {
-            blockLength += comment.size();
-        }
-        m_OutputFile.write((const char*)&blockLength, sizeof(blockLength));
-
-        for(const auto& comment : blockData)
-        {
-            const size_t commentSize{ comment.size() };
-            m_OutputFile.write(comment.data(), static_cast<std::streamsize>(commentSize));
-        }
-
-        WriteNullTerminator();
-    }*/
-
-    if (currentType == "v")
-    {
-        WriteVertexBlockInfo(currentType, blockData);
-        WriteVertexBlock(blockData);
+        WriteCommentBlockInfo(currentType, blockData);
+        WriteCommentBlock(blockData);
         WriteNullTerminator();
     }
-    else if(currentType == "vn")
+    else if (currentType == "v" || currentType == "vn")
     {
         WriteVertexBlockInfo(currentType, blockData);
         WriteVertexBlock(blockData);
@@ -204,15 +181,34 @@ void BinaryWriter::WriteVertexBlock(const std::vector<std::string>& blockData)
     }
 }
 
+void BinaryWriter::WriteCommentBlockInfo(const std::string& currentType, const std::vector<std::string>& blockData)
+{
+    char type{ m_TypeMap[currentType] };
+    m_OutputFile.write(&type, sizeof(type));
+
+    // TODO: size_t is 64 bit, which is probably overkill
+    size_t numComments{ blockData.size() };
+    m_OutputFile.write((const char*)&numComments, sizeof(numComments));
+}
+
+void BinaryWriter::WriteCommentBlock(const std::vector<std::string>& blockData)
+{
+    for (const auto& comment : blockData)
+    {
+        // TODO: size_t is 64 bit, which is probably overkill
+        const size_t commentSize{ comment.size() };
+        m_OutputFile.write((const char*)&commentSize, sizeof(commentSize));
+        m_OutputFile.write(comment.data(), static_cast<std::streamsize>(commentSize));
+    }
+}
+
 void BinaryWriter::WriteFaceBlockInfo(const std::string& currentType, const std::vector<std::string>& blockData)
 {
     char type{ m_TypeMap[currentType] };
     m_OutputFile.write(&type, sizeof(type));
 
-    // Write compressionType
     m_OutputFile.write((const char*)&m_UseCompactFaces, sizeof(m_UseCompactFaces));
 
-    // Write blocklength (block.size() * relevant fields)
     size_t blockLength{ blockData.size() };
     m_OutputFile.write((const char*)&blockLength, sizeof(blockLength));
 }

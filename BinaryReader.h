@@ -19,8 +19,16 @@ private:
 	void DecodeHeader();
 	void VerifyHeader();
 
+	void WriteVertexBlock();
 	void WriteVertex();
+
+	void WriteNormalBlock();
 	void WriteNormal();
+
+	void WriteFaceBlock();
 	void WriteFace(bool isCompact);
+
+	void WriteCommentBlock();
+	void WriteComment();
 };
 

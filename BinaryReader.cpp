@@ -69,38 +69,19 @@ void BinaryReader::WriteObj()
 
         if (m_TypeMap[type] == "v")
         {
-            size_t blockSize{};
-            m_InputFile.read((char*)&blockSize, sizeof(blockSize));
-            for (size_t i{ 0 }; i < blockSize; ++i)
-            {
-                WriteVertex();
-            }
+            WriteVertexBlock();
         }
         else if (m_TypeMap[type] == "vn")
         {
-            size_t blockSize{};
-            m_InputFile.read((char*)&blockSize, sizeof(blockSize));
-            for (size_t i{ 0 }; i < blockSize; ++i)
-            {
-                WriteNormal();
-            }
+            WriteNormalBlock();
         }
         else if (m_TypeMap[type] == "f")
         {
-            bool useCompactFaces;
-            m_InputFile.read((char*)&useCompactFaces, sizeof(useCompactFaces));
-
-            size_t blockSize{};
-            m_InputFile.read((char*)&blockSize, sizeof(blockSize));
-
-            for (size_t i(0); i < blockSize; ++i)
-            {
-                WriteFace(useCompactFaces);
-            }
+            WriteFaceBlock();
         }
         else if(m_TypeMap[type] == "#")
         {
-	        
+            WriteCommentBlock();
         }
 
         // Verify end of block
@@ -108,9 +89,19 @@ void BinaryReader::WriteObj()
         m_InputFile.read(&blockTerminator, sizeof(blockTerminator));
         if (blockTerminator != 0)
         {
-            std::cout << "block was not terminated by null terminator!\n";
+            std::cout << "Block was not terminated by null terminator! File is potentially corrupted!\n";
             return;
         }
+    }
+}
+
+void BinaryReader::WriteVertexBlock()
+{
+    size_t blockSize{};
+    m_InputFile.read((char*)&blockSize, sizeof(blockSize));
+    for (size_t i{ 0 }; i < blockSize; ++i)
+    {
+        WriteVertex();
     }
 }
 
@@ -121,11 +112,35 @@ void BinaryReader::WriteVertex()
     m_OutputFile << "v " << v.x << " " << v.y << " " << v.z << '\n';
 }
 
+void BinaryReader::WriteNormalBlock()
+{
+    size_t blockSize{};
+    m_InputFile.read((char*)&blockSize, sizeof(blockSize));
+    for (size_t i{ 0 }; i < blockSize; ++i)
+    {
+        WriteNormal();
+    }
+}
+
 void BinaryReader::WriteNormal()
 {
     Vertex v{};
     m_InputFile.read((char*)&v, sizeof(v));
     m_OutputFile << "vn " << v.x << " " << v.y << " " << v.z << '\n';
+}
+
+void BinaryReader::WriteFaceBlock()
+{
+    bool useCompactFaces{};
+    m_InputFile.read((char*)&useCompactFaces, sizeof(useCompactFaces));
+
+    size_t blockSize{};
+    m_InputFile.read((char*)&blockSize, sizeof(blockSize));
+
+    for (size_t i(0); i < blockSize; ++i)
+    {
+        WriteFace(useCompactFaces);
+    }
 }
 
 void BinaryReader::WriteFace(bool isCompact)
@@ -142,4 +157,25 @@ void BinaryReader::WriteFace(bool isCompact)
         m_InputFile.read((char*)&f, sizeof(f));
         m_OutputFile << "f " << f.v0 << " " << f.v1 << " " << f.v2 << '\n';
     }
+}
+
+void BinaryReader::WriteCommentBlock()
+{
+    size_t numComments{};
+    m_InputFile.read((char*)&numComments, sizeof(numComments));
+
+    for (size_t i{ 0 }; i < numComments; ++i)
+    {
+        WriteComment();
+    }
+}
+
+void BinaryReader::WriteComment()
+{
+    size_t commentLength{};
+    m_InputFile.read((char*)&commentLength, sizeof(commentLength));
+    std::string comment{};
+    comment.resize(commentLength);
+    m_InputFile.read(comment.data(), commentLength);
+    m_OutputFile << comment << '\n';
 }
