@@ -10,6 +10,11 @@ struct Vertex
     float x, y, z;
 };
 
+struct Face
+{
+    int v0, v1, v2;
+};
+
 int main()
 {
     // Initialize files
@@ -89,13 +94,25 @@ int main()
             // Write block
             if(currentType == "v")
             {
-	            for(const auto& vertex : blockData)
+	            for(const auto& vString : blockData)
 	            {
-                    std::stringstream vertexString{ vertex };
+                    std::stringstream vertexString{ vString };
                     std::string type;
                     Vertex v;
                     vertexString >> type >> v.x >> v.y >> v.z;
                     outputFile.write((const char*)&v, sizeof(v));
+	            }
+                outputFile.write(&nullTerminator, sizeof(nullTerminator));
+            }
+            else if(currentType == "f")
+            {
+	            for(const auto& fString : blockData)
+	            {
+                    std::stringstream faceString{ fString };
+                    std::string type;
+                    Face f;
+                    faceString >> type >> f.v0 >> f.v1 >> f.v2;
+                    outputFile.write((const char*)&f, sizeof(f));
 	            }
                 outputFile.write(&nullTerminator, sizeof(nullTerminator));
             }
@@ -109,6 +126,47 @@ int main()
         blockData.push_back(line.str());
     }
 
+    if (!blockData.empty())
+    {
+        if (currentType == "v" || currentType == "f")
+        {
+            // Write type
+            char type{ typeMap[currentType] };
+            outputFile.write(&type, sizeof(type));
+            // Write blocklength (block.size() * relevant fields)
+            size_t blockLength{ blockData.size() };
+            outputFile.write((const char*)&blockLength, sizeof(blockLength));
+        }
+
+        // Write block
+        if (currentType == "v")
+        {
+            for (const auto& vString : blockData)
+            {
+                std::stringstream vertexString{ vString };
+                std::string type;
+                Vertex v;
+                vertexString >> type >> v.x >> v.y >> v.z;
+                outputFile.write((const char*)&v, sizeof(v));
+            }
+            outputFile.write(&nullTerminator, sizeof(nullTerminator));
+        }
+        else if (currentType == "f")
+        {
+            for (const auto& fString : blockData)
+            {
+                std::stringstream faceString{ fString };
+                std::string type;
+                Face f;
+                faceString >> type >> f.v0 >> f.v1 >> f.v2;
+                outputFile.write((const char*)&f, sizeof(f));
+            }
+            outputFile.write(&nullTerminator, sizeof(nullTerminator));
+        }
+
+        // Clear blockData
+        blockData.clear();
+    }
 
 
 
@@ -165,8 +223,17 @@ int main()
             {
                 Vertex v{};
                 fileToReinterpret.read((char*)&v, sizeof(v));
-                backTranslation << charTypeMap[type] << v.x << v.y << v.z << '\n';
+                backTranslation << charTypeMap[type] << " " << v.x << " " << v.y << " " << v.z << '\n';
             }
+        }
+        else if(charTypeMap[type] == "f")
+        {
+	        for(size_t i(0); i < blockSize; ++i)
+	        {
+                Face f{};
+                fileToReinterpret.read((char*)&f, sizeof(f));
+                backTranslation << charTypeMap[type] << " " << f.v0 << " " << f.v1 << " " << f.v2 << '\n';
+	        }
         }
         // Verify end of block
         char blockTerminator{};
